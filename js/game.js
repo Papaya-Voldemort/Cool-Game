@@ -11,6 +11,7 @@ class Game {
         this.input = new InputHandler();
         this.narrativeManager = new NarrativeManager();
         this.combatSystem = new CombatSystem();
+        this.eventSystem = null; // Initialized when game starts
         
         // Game objects
         this.player = null;
@@ -27,6 +28,11 @@ class Game {
         // Game state
         this.state = CONSTANTS.STATES.MENU;
         this.lastTime = 0;
+        
+        // Performance tracking
+        this.fps = 0;
+        this.frameCount = 0;
+        this.fpsTimer = 0;
         
         // UI elements
         this.setupUI();
@@ -73,6 +79,7 @@ class Game {
         // Initialize game objects
         this.player = new Player(100, 500);
         this.world = new World(this.narrativeManager);
+        this.eventSystem = new EventSystem(this.narrativeManager);
         
         // Start narrative
         this.narrativeManager.startGame();
@@ -154,6 +161,11 @@ class Game {
         // Update world
         this.world.update(dt, this.player, this.narrativeManager);
         
+        // Update event system
+        if (this.eventSystem) {
+            this.eventSystem.update(dt, this.player, this.world, this.narrativeManager);
+        }
+        
         // Update combat
         this.combatSystem.update(dt, this.player, this.world.getActiveEnemies());
         
@@ -195,6 +207,15 @@ class Game {
         }
         if (this.player.isDodging) {
             this.narrativeManager.trackCombatStyle('defensive');
+        }
+        
+        // FPS tracking
+        this.frameCount++;
+        this.fpsTimer += dt;
+        if (this.fpsTimer >= 1.0) {
+            this.fps = this.frameCount;
+            this.frameCount = 0;
+            this.fpsTimer = 0;
         }
     }
     
