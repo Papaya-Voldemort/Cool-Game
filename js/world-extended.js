@@ -552,8 +552,19 @@ World.prototype.loadFloatingIslandsArea = function() {
     );
 };
 
-// Override the original loadArea to use extended version
+// Extend the original loadArea to use extended version as fallback
 World.prototype.originalLoadArea = World.prototype.loadArea;
 World.prototype.loadArea = function(areaName) {
-    this.loadExtendedArea(areaName);
+    // Try extended areas first
+    const extendedAreas = ['mountain', 'frozen_peaks', 'castle', 'royal_castle', 'swamp', 'cursed_swamp',
+                           'desert', 'scorching_desert', 'underground', 'crystal_caves', 'sky_temple',
+                           'void_realm', 'harbor', 'port_city', 'ruins', 'ancient_ruins', 'volcano',
+                           'fire_mountain', 'floating_islands'];
+    
+    if (extendedAreas.some(area => areaName.toLowerCase().includes(area.toLowerCase()))) {
+        this.loadExtendedArea(areaName);
+    } else {
+        // Fall back to original areas
+        this.originalLoadArea(areaName);
+    }
 };

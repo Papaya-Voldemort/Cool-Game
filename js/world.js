@@ -325,8 +325,8 @@ class World {
             });
         }
         
-        // Mark as talked to but allow multiple conversations
-        npc.hasDialogue = true;
+        // Mark as talked to (allow multiple conversations)
+        npc.lastTalkedTime = Date.now();
         npc.talkedCount = (npc.talkedCount || 0) + 1;
     }
     

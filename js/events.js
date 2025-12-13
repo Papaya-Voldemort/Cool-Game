@@ -302,12 +302,13 @@ class EventSystem {
         // Check for triggered events
         const now = Date.now();
         
-        // Random encounters
+        // Random encounters (check cooldown before expensive logic)
         if (now - this.lastEventTime > this.eventCooldown) {
             if (Math.random() < this.randomEncounterChance) {
                 this.triggerRandomEncounter(world.currentArea, narrativeManager);
-                this.lastEventTime = now;
             }
+            // Always update timer to avoid repeated checks
+            this.lastEventTime = now;
         }
         
         // Check location-specific triggers

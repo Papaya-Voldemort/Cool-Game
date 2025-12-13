@@ -189,11 +189,13 @@ class Game {
             this.particleSystem.createDodgeEffect(this.player.x, this.player.y, this.player.width, this.player.height);
         }
         
-        // Environmental particles based on area
-        if (this.world.currentArea.includes('Forest')) {
-            this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'leaves');
-        } else if (this.world.currentArea.includes('Mountain') || this.world.currentArea.includes('Frozen')) {
-            this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'snow');
+        // Environmental particles based on area (throttled)
+        if (this.frameCount % 3 === 0) { // Only create every 3rd frame
+            if (this.world.currentArea.includes('Forest')) {
+                this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'leaves');
+            } else if (this.world.currentArea.includes('Mountain') || this.world.currentArea.includes('Frozen')) {
+                this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'snow');
+            }
         }
         
         // Update camera

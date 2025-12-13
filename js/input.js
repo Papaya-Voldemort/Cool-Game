@@ -76,15 +76,14 @@ class InputHandler {
     setupEventListeners() {
         // Keyboard events with proper propagation handling
         window.addEventListener('keydown', (e) => {
-            const prevState = this.keys[e.code];
-            this.keys[e.code] = true;
-            
-            // Track fresh presses (not held keys)
-            if (!prevState) {
+            // Only register as a press if it wasn't already down
+            if (!this.keys[e.code]) {
                 this.keyPressedThisFrame[e.code] = true;
                 this.bufferInput(e.code, 'press');
                 this.addToComboHistory(e.code);
             }
+            
+            this.keys[e.code] = true;
             
             // Prevent default for game keys
             if (this.isGameKey(e.code)) {
