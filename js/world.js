@@ -300,19 +300,34 @@ class World {
     }
     
     triggerNPCDialogue(npc) {
-        const dialogues = {
-            'Village Elder': 'Welcome, traveler. Our village needs your help. Will you aid us?',
-            'Merchant': 'I have wares if you have coin. Or information, if you prefer.',
-            'Warrior': 'The dungeon ahead is treacherous. Are you sure you\'re ready?',
-            'Mysterious Stranger': 'Not all is as it seems in these woods. Choose your path wisely.'
-        };
+        // Use comprehensive NPC dialogue system if available
+        if (typeof getNPCDialogue === 'function') {
+            const dialogue = getNPCDialogue(npc.name);
+            if (dialogue && dialogue.initial) {
+                this.narrativeManager.showDialogue(dialogue.initial);
+                if (dialogue.initial.choices) {
+                    setTimeout(() => {
+                        this.narrativeManager.presentChoice(dialogue.initial.choices);
+                    }, 100);
+                }
+            } else {
+                // Fallback dialogue
+                this.narrativeManager.showDialogue({
+                    speaker: npc.name,
+                    text: 'Greetings, traveler. Safe journeys to you.'
+                });
+            }
+        } else {
+            // Simple fallback if NPC system not loaded
+            this.narrativeManager.showDialogue({
+                speaker: npc.name,
+                text: 'Greetings, traveler.'
+            });
+        }
         
-        this.narrativeManager.showDialogue({
-            speaker: npc.name,
-            text: dialogues[npc.name] || 'Hello, traveler.'
-        });
-        
-        npc.hasDialogue = false; // Prevent repeated dialogues
+        // Mark as talked to but allow multiple conversations
+        npc.hasDialogue = true;
+        npc.talkedCount = (npc.talkedCount || 0) + 1;
     }
     
     getPlatforms() {

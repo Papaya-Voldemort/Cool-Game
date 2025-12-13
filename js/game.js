@@ -12,6 +12,8 @@ class Game {
         this.narrativeManager = new NarrativeManager();
         this.combatSystem = new CombatSystem();
         this.eventSystem = null; // Initialized when game starts
+        this.particleSystem = new ParticleSystem();
+        this.screenShake = new ScreenShake();
         
         // Game objects
         this.player = null;
@@ -169,6 +171,31 @@ class Game {
         // Update combat
         this.combatSystem.update(dt, this.player, this.world.getActiveEnemies());
         
+        // Update particle system
+        this.particleSystem.update(dt);
+        
+        // Update screen shake
+        this.screenShake.update(dt);
+        
+        // Create effects based on player actions
+        if (this.player.isAttacking) {
+            const attackX = this.player.direction === 'right' 
+                ? this.player.x + this.player.width 
+                : this.player.x - 40;
+            this.particleSystem.createTrail(attackX + 20, this.player.y + 25, '#FFAA00', 3);
+        }
+        
+        if (this.player.isDodging) {
+            this.particleSystem.createDodgeEffect(this.player.x, this.player.y, this.player.width, this.player.height);
+        }
+        
+        // Environmental particles based on area
+        if (this.world.currentArea.includes('Forest')) {
+            this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'leaves');
+        } else if (this.world.currentArea.includes('Mountain') || this.world.currentArea.includes('Frozen')) {
+            this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'snow');
+        }
+        
         // Update camera
         this.updateCamera();
         
@@ -189,6 +216,8 @@ class Game {
         
         // Check for game over
         if (this.player.hp <= 0) {
+            this.particleSystem.createExplosion(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, '#FF0000', 30);
+            this.screenShake.shake(10, 0.5);
             this.changeState(CONSTANTS.STATES.GAME_OVER);
         }
         
@@ -201,6 +230,8 @@ class Game {
         if (this.player.isAttacking) {
             if (this.player.comboCount > 2) {
                 this.narrativeManager.trackCombatStyle('aggressive');
+                this.particleSystem.createHitEffect(this.player.x + this.player.width / 2, this.player.y, true);
+                this.screenShake.shake(3, 0.1);
             } else {
                 this.narrativeManager.trackCombatStyle('tactical');
             }
@@ -286,12 +317,24 @@ class Game {
         
         // Update decision count
         document.getElementById('decision-count').textContent = this.narrativeManager.getDecisionCount();
+        
+        // Update FPS
+        document.getElementById('fps-value').textContent = this.fps;
+        
+        // Update morality
+        const moralityValue = this.narrativeManager.morality;
+        document.getElementById('morality-value').textContent = moralityValue > 0 ? `+${moralityValue}` : moralityValue;
     }
     
     render() {
         // Clear canvas
         this.ctx.fillStyle = CONSTANTS.COLORS.BLACK;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Apply screen shake
+        const shakeOffset = this.screenShake.getOffset();
+        this.ctx.save();
+        this.ctx.translate(shakeOffset.x, shakeOffset.y);
         
         // Render based on state
         if (this.state !== CONSTANTS.STATES.MENU && this.player && this.world) {
@@ -303,7 +346,12 @@ class Game {
             
             // Render combat effects
             this.combatSystem.render(this.ctx, this.cameraX, this.cameraY);
+            
+            // Render particles
+            this.particleSystem.render(this.ctx, this.cameraX, this.cameraY);
         }
+        
+        this.ctx.restore();
     }
     
     changeState(newState) {
