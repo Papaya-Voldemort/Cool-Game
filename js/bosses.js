@@ -44,6 +44,9 @@ class Boss {
         this.playerAggressionLevel = 0;
         this.playerDefenseLevel = 0;
         this.adaptationTimer = 0;
+        
+        // Defeat tracking
+        this.wasDefeated = false;
     }
     
     getAbilitiesForType(type) {

@@ -168,15 +168,17 @@ class NarrativeManager {
         id += this.flags.sparedEnemy ? 'M' : '-';
         
         // Combat style (3 types)
-        const dominantStyle = Object.keys(this.combatStyle).reduce((a, b) => 
-            this.combatStyle[a] > this.combatStyle[b] ? a : b
-        );
+        const styleKeys = Object.keys(this.combatStyle);
+        const dominantStyle = styleKeys.length > 0 
+            ? styleKeys.reduce((a, b) => this.combatStyle[a] > this.combatStyle[b] ? a : b, styleKeys[0])
+            : 'tactical';
         id += dominantStyle[0].toUpperCase();
         
         // Relationship component (strongest relationship)
-        const strongestRelationship = Object.keys(this.relationships).reduce((a, b) => 
-            this.relationships[a] > this.relationships[b] ? a : b
-        );
+        const relKeys = Object.keys(this.relationships);
+        const strongestRelationship = relKeys.length > 0
+            ? relKeys.reduce((a, b) => this.relationships[a] > this.relationships[b] ? a : b, relKeys[0])
+            : 'warrior';
         id += strongestRelationship[0].toUpperCase();
         
         return id;

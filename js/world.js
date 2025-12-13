@@ -223,9 +223,12 @@ class World {
         this.checkInteractions(player, narrativeManager);
         
         // Check if boss defeated
-        for (const boss of this.bosses) {
-            if (!boss.isAlive && !narrativeManager.flags[`defeatedBoss${this.bosses.indexOf(boss) + 1}`]) {
-                narrativeManager.flags[`defeatedBoss${this.bosses.indexOf(boss) + 1}`] = true;
+        for (let i = 0; i < this.bosses.length; i++) {
+            const boss = this.bosses[i];
+            if (!boss.isAlive && !boss.wasDefeated) {
+                // Use consistent boss numbering
+                const bossNumber = i + 1;
+                narrativeManager.flags[`defeatedBoss${bossNumber}`] = true;
                 this.onBossDefeated(boss);
             }
         }
@@ -265,6 +268,9 @@ class World {
             speaker: 'System',
             text: `You defeated the ${boss.bossType} boss! A great evil has been vanquished.`
         });
+        
+        // Mark this specific boss as defeated
+        boss.wasDefeated = true;
     }
     
     checkDialogueTrigger(player) {
