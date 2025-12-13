@@ -20,6 +20,10 @@ class Game {
         this.cameraX = 0;
         this.cameraY = 0;
         
+        // Scaling
+        this.scale = 1;
+        this.setupCanvasScaling();
+        
         // Game state
         this.state = CONSTANTS.STATES.MENU;
         this.lastTime = 0;
@@ -30,6 +34,30 @@ class Game {
         // Start game loop
         this.running = true;
         requestAnimationFrame((time) => this.gameLoop(time));
+    }
+    
+    setupCanvasScaling() {
+        const resizeCanvas = () => {
+            const container = document.getElementById('game-container');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            
+            // Calculate scale to fit container while maintaining aspect ratio
+            const scaleX = containerWidth / CONSTANTS.SCREEN_WIDTH;
+            const scaleY = containerHeight / CONSTANTS.SCREEN_HEIGHT;
+            this.scale = Math.min(scaleX, scaleY);
+            
+            // Set canvas size
+            this.canvas.width = CONSTANTS.SCREEN_WIDTH;
+            this.canvas.height = CONSTANTS.SCREEN_HEIGHT;
+            
+            // Apply scaling via CSS for smooth rendering
+            this.canvas.style.width = (CONSTANTS.SCREEN_WIDTH * this.scale) + 'px';
+            this.canvas.style.height = (CONSTANTS.SCREEN_HEIGHT * this.scale) + 'px';
+        };
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
     }
     
     setupUI() {
@@ -68,6 +96,9 @@ class Game {
         
         // Render
         this.render();
+        
+        // Post-update (for input tracking)
+        this.input.postUpdate();
         
         // Continue loop
         requestAnimationFrame((time) => this.gameLoop(time));

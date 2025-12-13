@@ -283,33 +283,18 @@ class Player {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
         
-        // Draw player (placeholder rectangle)
-        ctx.save();
+        // Use procedural art generator
+        artGenerator.drawPlayer(ctx, screenX, screenY, this.width, this.height, 
+            this.direction, this.isAttacking, this.isDodging, this.invulnerable);
         
-        // Flash if invulnerable
-        if (this.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
-            ctx.globalAlpha = 0.5;
-        }
-        
-        ctx.fillStyle = CONSTANTS.COLORS.PLAYER;
-        ctx.fillRect(screenX, screenY, this.width, this.height);
-        
-        // Draw direction indicator
-        ctx.fillStyle = CONSTANTS.COLORS.WHITE;
-        const eyeX = this.direction === CONSTANTS.DIRECTION.RIGHT 
-            ? screenX + this.width - 10 
-            : screenX + 5;
-        ctx.fillRect(eyeX, screenY + 10, 5, 5);
-        
-        // Draw attack animation
+        // Draw attack effect
         if (this.isAttacking) {
-            ctx.fillStyle = CONSTANTS.COLORS.YELLOW;
+            const attackRange = 40;
             const attackX = this.direction === CONSTANTS.DIRECTION.RIGHT 
                 ? screenX + this.width 
-                : screenX - 40;
-            ctx.fillRect(attackX, screenY, 40, this.height);
+                : screenX - attackRange;
+            artGenerator.drawAttackEffect(ctx, attackX, screenY, attackRange, this.height, 
+                'basic', this.comboCount);
         }
-        
-        ctx.restore();
     }
 }

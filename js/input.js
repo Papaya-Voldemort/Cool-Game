@@ -56,6 +56,11 @@ class InputHandler {
     }
     
     update() {
+        // Copy current keys to prevKeys at the END of the frame
+        // This is done in postUpdate after all logic has run
+    }
+    
+    postUpdate() {
         // Store previous frame keys for detecting presses
         this.prevKeys = { ...this.keys };
     }

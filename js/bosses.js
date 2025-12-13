@@ -415,37 +415,16 @@ class Boss {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
         
-        // Draw boss
-        ctx.fillStyle = CONSTANTS.COLORS.BOSS;
-        
         // Flash during phase transition
         if (this.phaseTransitioning && Math.floor(Date.now() / 100) % 2 === 0) {
-            ctx.fillStyle = CONSTANTS.COLORS.YELLOW;
+            ctx.save();
+            ctx.shadowColor = '#FFFF00';
+            ctx.shadowBlur = 30;
+            artGenerator.drawBoss(ctx, screenX, screenY, this.width, this.height, this.bossType, this.hp, this.maxHp);
+            ctx.restore();
+        } else {
+            artGenerator.drawBoss(ctx, screenX, screenY, this.width, this.height, this.bossType, this.hp, this.maxHp);
         }
-        
-        ctx.fillRect(screenX, screenY, this.width, this.height);
-        
-        // Draw crown/indicator
-        ctx.fillStyle = CONSTANTS.COLORS.YELLOW;
-        ctx.beginPath();
-        ctx.moveTo(screenX + this.width / 2, screenY - 10);
-        ctx.lineTo(screenX + this.width / 2 - 10, screenY);
-        ctx.lineTo(screenX + this.width / 2 + 10, screenY);
-        ctx.fill();
-        
-        // Draw HP bar (larger for boss)
-        const hpBarWidth = this.width * 2;
-        const hpBarHeight = 8;
-        const hpRatio = this.hp / this.maxHp;
-        
-        ctx.fillStyle = CONSTANTS.COLORS.DARK_GRAY;
-        ctx.fillRect(screenX - this.width / 2, screenY - 20, hpBarWidth, hpBarHeight);
-        
-        ctx.fillStyle = CONSTANTS.COLORS.RED;
-        ctx.fillRect(screenX - this.width / 2, screenY - 20, hpBarWidth, hpBarHeight);
-        
-        ctx.fillStyle = CONSTANTS.COLORS.ORANGE;
-        ctx.fillRect(screenX - this.width / 2, screenY - 20, hpBarWidth * hpRatio, hpBarHeight);
         
         // Draw phase indicators
         for (let i = 0; i < this.maxPhases; i++) {
@@ -457,11 +436,9 @@ class Boss {
         
         // Draw attack indicator
         if (this.isAttacking || this.state === 'spinning') {
-            ctx.fillStyle = CONSTANTS.COLORS.RED;
-            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
             const range = this.state === 'spinning' ? 80 : 50;
             ctx.fillRect(screenX - range / 2, screenY, this.width + range, this.height);
-            ctx.globalAlpha = 1.0;
         }
     }
 }
