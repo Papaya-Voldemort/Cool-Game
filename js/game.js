@@ -11,6 +11,9 @@ class Game {
         this.input = new InputHandler();
         this.narrativeManager = new NarrativeManager();
         this.combatSystem = new CombatSystem();
+        this.eventSystem = null; // Initialized when game starts
+        this.particleSystem = new ParticleSystem();
+        this.screenShake = new ScreenShake();
         
         // Game objects
         this.player = null;
@@ -20,9 +23,18 @@ class Game {
         this.cameraX = 0;
         this.cameraY = 0;
         
+        // Scaling
+        this.scale = 1;
+        this.setupCanvasScaling();
+        
         // Game state
         this.state = CONSTANTS.STATES.MENU;
         this.lastTime = 0;
+        
+        // Performance tracking
+        this.fps = 0;
+        this.frameCount = 0;
+        this.fpsTimer = 0;
         
         // UI elements
         this.setupUI();
@@ -30,6 +42,30 @@ class Game {
         // Start game loop
         this.running = true;
         requestAnimationFrame((time) => this.gameLoop(time));
+    }
+    
+    setupCanvasScaling() {
+        const resizeCanvas = () => {
+            const container = document.getElementById('game-container');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            
+            // Calculate scale to fit container while maintaining aspect ratio
+            const scaleX = containerWidth / CONSTANTS.SCREEN_WIDTH;
+            const scaleY = containerHeight / CONSTANTS.SCREEN_HEIGHT;
+            this.scale = Math.min(scaleX, scaleY);
+            
+            // Set canvas size
+            this.canvas.width = CONSTANTS.SCREEN_WIDTH;
+            this.canvas.height = CONSTANTS.SCREEN_HEIGHT;
+            
+            // Apply scaling via CSS for smooth rendering
+            this.canvas.style.width = (CONSTANTS.SCREEN_WIDTH * this.scale) + 'px';
+            this.canvas.style.height = (CONSTANTS.SCREEN_HEIGHT * this.scale) + 'px';
+        };
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
     }
     
     setupUI() {
@@ -45,6 +81,7 @@ class Game {
         // Initialize game objects
         this.player = new Player(100, 500);
         this.world = new World(this.narrativeManager);
+        this.eventSystem = new EventSystem(this.narrativeManager);
         
         // Start narrative
         this.narrativeManager.startGame();
@@ -68,6 +105,9 @@ class Game {
         
         // Render
         this.render();
+        
+        // Post-update (for input tracking)
+        this.input.postUpdate();
         
         // Continue loop
         requestAnimationFrame((time) => this.gameLoop(time));
@@ -123,8 +163,40 @@ class Game {
         // Update world
         this.world.update(dt, this.player, this.narrativeManager);
         
+        // Update event system
+        if (this.eventSystem) {
+            this.eventSystem.update(dt, this.player, this.world, this.narrativeManager);
+        }
+        
         // Update combat
         this.combatSystem.update(dt, this.player, this.world.getActiveEnemies());
+        
+        // Update particle system
+        this.particleSystem.update(dt);
+        
+        // Update screen shake
+        this.screenShake.update(dt);
+        
+        // Create effects based on player actions
+        if (this.player.isAttacking) {
+            const attackX = this.player.direction === 'right' 
+                ? this.player.x + this.player.width 
+                : this.player.x - 40;
+            this.particleSystem.createTrail(attackX + 20, this.player.y + 25, '#FFAA00', 3);
+        }
+        
+        if (this.player.isDodging) {
+            this.particleSystem.createDodgeEffect(this.player.x, this.player.y, this.player.width, this.player.height);
+        }
+        
+        // Environmental particles based on area (throttled)
+        if (this.frameCount % 3 === 0) { // Only create every 3rd frame
+            if (this.world.currentArea.includes('Forest')) {
+                this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'leaves');
+            } else if (this.world.currentArea.includes('Mountain') || this.world.currentArea.includes('Frozen')) {
+                this.particleSystem.createEnvironmentalEffect(this.cameraX, 0, 'snow');
+            }
+        }
         
         // Update camera
         this.updateCamera();
@@ -146,6 +218,8 @@ class Game {
         
         // Check for game over
         if (this.player.hp <= 0) {
+            this.particleSystem.createExplosion(this.player.x + this.player.width / 2, this.player.y + this.player.height / 2, '#FF0000', 30);
+            this.screenShake.shake(10, 0.5);
             this.changeState(CONSTANTS.STATES.GAME_OVER);
         }
         
@@ -158,12 +232,23 @@ class Game {
         if (this.player.isAttacking) {
             if (this.player.comboCount > 2) {
                 this.narrativeManager.trackCombatStyle('aggressive');
+                this.particleSystem.createHitEffect(this.player.x + this.player.width / 2, this.player.y, true);
+                this.screenShake.shake(3, 0.1);
             } else {
                 this.narrativeManager.trackCombatStyle('tactical');
             }
         }
         if (this.player.isDodging) {
             this.narrativeManager.trackCombatStyle('defensive');
+        }
+        
+        // FPS tracking
+        this.frameCount++;
+        this.fpsTimer += dt;
+        if (this.fpsTimer >= 1.0) {
+            this.fps = this.frameCount;
+            this.frameCount = 0;
+            this.fpsTimer = 0;
         }
     }
     
@@ -234,12 +319,24 @@ class Game {
         
         // Update decision count
         document.getElementById('decision-count').textContent = this.narrativeManager.getDecisionCount();
+        
+        // Update FPS
+        document.getElementById('fps-value').textContent = this.fps;
+        
+        // Update morality
+        const moralityValue = this.narrativeManager.morality;
+        document.getElementById('morality-value').textContent = moralityValue > 0 ? `+${moralityValue}` : moralityValue;
     }
     
     render() {
         // Clear canvas
         this.ctx.fillStyle = CONSTANTS.COLORS.BLACK;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Apply screen shake
+        const shakeOffset = this.screenShake.getOffset();
+        this.ctx.save();
+        this.ctx.translate(shakeOffset.x, shakeOffset.y);
         
         // Render based on state
         if (this.state !== CONSTANTS.STATES.MENU && this.player && this.world) {
@@ -251,7 +348,12 @@ class Game {
             
             // Render combat effects
             this.combatSystem.render(this.ctx, this.cameraX, this.cameraY);
+            
+            // Render particles
+            this.particleSystem.render(this.ctx, this.cameraX, this.cameraY);
         }
+        
+        this.ctx.restore();
     }
     
     changeState(newState) {

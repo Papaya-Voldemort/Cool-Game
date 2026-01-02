@@ -300,19 +300,34 @@ class World {
     }
     
     triggerNPCDialogue(npc) {
-        const dialogues = {
-            'Village Elder': 'Welcome, traveler. Our village needs your help. Will you aid us?',
-            'Merchant': 'I have wares if you have coin. Or information, if you prefer.',
-            'Warrior': 'The dungeon ahead is treacherous. Are you sure you\'re ready?',
-            'Mysterious Stranger': 'Not all is as it seems in these woods. Choose your path wisely.'
-        };
+        // Use comprehensive NPC dialogue system if available
+        if (typeof getNPCDialogue === 'function') {
+            const dialogue = getNPCDialogue(npc.name);
+            if (dialogue && dialogue.initial) {
+                this.narrativeManager.showDialogue(dialogue.initial);
+                if (dialogue.initial.choices) {
+                    setTimeout(() => {
+                        this.narrativeManager.presentChoice(dialogue.initial.choices);
+                    }, 100);
+                }
+            } else {
+                // Fallback dialogue
+                this.narrativeManager.showDialogue({
+                    speaker: npc.name,
+                    text: 'Greetings, traveler. Safe journeys to you.'
+                });
+            }
+        } else {
+            // Simple fallback if NPC system not loaded
+            this.narrativeManager.showDialogue({
+                speaker: npc.name,
+                text: 'Greetings, traveler.'
+            });
+        }
         
-        this.narrativeManager.showDialogue({
-            speaker: npc.name,
-            text: dialogues[npc.name] || 'Hello, traveler.'
-        });
-        
-        npc.hasDialogue = false; // Prevent repeated dialogues
+        // Mark as talked to (allow multiple conversations)
+        npc.lastTalkedTime = Date.now();
+        npc.talkedCount = (npc.talkedCount || 0) + 1;
     }
     
     getPlatforms() {
@@ -324,28 +339,15 @@ class World {
     }
     
     render(ctx, cameraX, cameraY) {
-        // Background
-        ctx.fillStyle = this.getBackgroundColor();
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        // Background - use procedural art
+        artGenerator.drawBackground(ctx, ctx.canvas.width, ctx.canvas.height, this.currentArea);
         
         // Platforms
         for (const platform of this.platforms) {
             const screenX = platform.x - cameraX;
             const screenY = platform.y - cameraY;
             
-            ctx.fillStyle = platform.climbable ? CONSTANTS.COLORS.ORANGE : CONSTANTS.COLORS.PLATFORM;
-            ctx.fillRect(screenX, screenY, platform.width, platform.height);
-            
-            if (platform.climbable) {
-                // Draw ladder pattern
-                ctx.strokeStyle = CONSTANTS.COLORS.YELLOW;
-                for (let i = 0; i < platform.height; i += 20) {
-                    ctx.beginPath();
-                    ctx.moveTo(screenX, screenY + i);
-                    ctx.lineTo(screenX + platform.width, screenY + i);
-                    ctx.stroke();
-                }
-            }
+            artGenerator.drawPlatform(ctx, screenX, screenY, platform.width, platform.height, platform.climbable);
         }
         
         // NPCs
@@ -353,8 +355,7 @@ class World {
             const screenX = npc.x - cameraX;
             const screenY = npc.y - cameraY;
             
-            ctx.fillStyle = CONSTANTS.COLORS.GREEN;
-            ctx.fillRect(screenX, screenY, npc.width, npc.height);
+            artGenerator.drawNPC(ctx, screenX, screenY, npc.width, npc.height, npc.name);
             
             // Name label
             ctx.fillStyle = CONSTANTS.COLORS.WHITE;
@@ -367,13 +368,7 @@ class World {
             const screenX = obj.x - cameraX;
             const screenY = obj.y - cameraY;
             
-            ctx.fillStyle = CONSTANTS.COLORS.INTERACTIVE;
-            ctx.fillRect(screenX, screenY, obj.width, obj.height);
-            
-            // Glow effect
-            ctx.strokeStyle = CONSTANTS.COLORS.YELLOW;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(screenX - 2, screenY - 2, obj.width + 4, obj.height + 4);
+            artGenerator.drawInteractable(ctx, screenX, screenY, obj.width, obj.height, obj.type);
         }
         
         // Enemies

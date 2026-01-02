@@ -213,33 +213,18 @@ class Enemy {
         const screenX = this.x - cameraX;
         const screenY = this.y - cameraY;
         
-        // Draw enemy
-        const color = this.type === 'strong' ? CONSTANTS.COLORS.PURPLE : CONSTANTS.COLORS.ENEMY;
-        ctx.fillStyle = color;
-        ctx.fillRect(screenX, screenY, this.width, this.height);
-        
-        // Draw HP bar
-        const hpBarWidth = this.width;
-        const hpBarHeight = 4;
-        const hpRatio = this.hp / this.maxHp;
-        
-        ctx.fillStyle = CONSTANTS.COLORS.RED;
-        ctx.fillRect(screenX, screenY - 8, hpBarWidth, hpBarHeight);
-        
-        ctx.fillStyle = CONSTANTS.COLORS.GREEN;
-        ctx.fillRect(screenX, screenY - 8, hpBarWidth * hpRatio, hpBarHeight);
+        // Use procedural art generator
+        artGenerator.drawEnemy(ctx, screenX, screenY, this.width, this.height, this.type, this.hp, this.maxHp);
         
         // Draw attack indicator
         if (this.isAttacking) {
-            ctx.fillStyle = CONSTANTS.COLORS.RED;
-            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
             ctx.fillRect(screenX - 5, screenY, this.width + 10, this.height);
-            ctx.globalAlpha = 1.0;
         }
         
-        // Draw behavior indicator (for debugging/visual feedback)
+        // Draw behavior indicator (for visual feedback)
         ctx.fillStyle = CONSTANTS.COLORS.WHITE;
         ctx.font = '10px Arial';
-        ctx.fillText(this.state[0].toUpperCase(), screenX + this.width / 2 - 5, screenY - 12);
+        ctx.fillText(this.state[0].toUpperCase(), screenX + this.width / 2 - 5, screenY - 15);
     }
 }
